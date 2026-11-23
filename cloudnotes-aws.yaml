@@ -1,1 +1,58 @@
-
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudnotes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudnotes
+  template:
+    metadata:
+      labels:
+        app: cloudnotes
+    spec:
+      containers:
+        - name: cloudnotes
+          image: rishabh172006/cloudnotes:v1
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudnotes-service
+spec:
+  type: NodePort
+  selector:
+    app: cloudnotes
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloudnotes-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloudnotes
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
